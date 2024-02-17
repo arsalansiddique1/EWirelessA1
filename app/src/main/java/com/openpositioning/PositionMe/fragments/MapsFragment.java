@@ -51,9 +51,12 @@ public class MapsFragment extends Fragment {
     private Handler handler = new Handler();
     float[] startPosition = sensorFusion.getGNSSLatitude(true);
     private Marker orientationMarker;
-    //Button to end PDR recording
+    //Buttons to end PDR recording
     private Button stopButton;
     private Button cancelButton;
+    //buttons to change map view types
+    private Button satelliteButton;
+    private Button normalButton;
     //Zoom of google maps
     private float zoom = 19f;
 
@@ -225,6 +228,33 @@ public class MapsFragment extends Fragment {
                 if(autoStop != null) autoStop.cancel();
             }
         });
+
+        this.satelliteButton = getView().findViewById(R.id.satellite);
+        this.satelliteButton.setOnClickListener(new View.OnClickListener() {
+            /**
+             * {@inheritDoc}
+             * OnClick listener for button to go to switch map view to satellite.
+             * When button clicked the map view is change to the satellite view.
+             */
+            @Override
+            public void onClick(View view) {
+                mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+            }
+        });
+        this.normalButton = getView().findViewById(R.id.normal);
+        this.normalButton.setOnClickListener(new View.OnClickListener() {
+            /**
+             * {@inheritDoc}
+             * OnClick listener for button to go to switch map view to normal.
+             * When button clicked the map view is change to the normal view.
+             */
+            @Override
+            public void onClick(View view) {
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            }
+        });
+
+
 
     }
 }

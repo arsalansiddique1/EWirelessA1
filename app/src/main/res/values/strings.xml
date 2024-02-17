@@ -110,5 +110,9 @@
     <string name="building_def_title">Default building assumptions</string>
     <string name="floor_height">Floor height in meters</string>
     <string name="live_path">LIVE PATH</string>
+    <string name="map_type">Map Type:</string>
+    <string name="normal">NORMAL</string>
+    <string name="satellite">SATELLITE</string>
+    <string name="map_view">Map View:</string>
 
 </resources>
