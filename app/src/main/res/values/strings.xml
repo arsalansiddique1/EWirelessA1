@@ -109,5 +109,6 @@
     <!-- Building defaults -->
     <string name="building_def_title">Default building assumptions</string>
     <string name="floor_height">Floor height in meters</string>
+    <string name="live_path">LIVE PATH</string>
 
 </resources>

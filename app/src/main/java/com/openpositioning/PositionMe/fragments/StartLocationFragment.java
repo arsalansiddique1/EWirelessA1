@@ -1,5 +1,6 @@
 package com.openpositioning.PositionMe.fragments;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -87,6 +88,7 @@ public class StartLocationFragment extends Fragment {
              * drag listener is generated to detect when the marker has moved to obtain the new
              * location.
              */
+            @SuppressLint("MissingPermission")
             @Override
             public void onMapReady(GoogleMap mMap) {
                 mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
@@ -94,6 +96,10 @@ public class StartLocationFragment extends Fragment {
                 mMap.getUiSettings().setTiltGesturesEnabled(true);
                 mMap.getUiSettings().setRotateGesturesEnabled(true);
                 mMap.getUiSettings().setScrollGesturesEnabled(true);
+                mMap.setMyLocationEnabled(true);
+
+
+
 
                 // Add a marker in current GPS location and move the camera
                 position = new LatLng(startPosition[0], startPosition[1]);

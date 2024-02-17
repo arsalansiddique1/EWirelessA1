@@ -43,6 +43,7 @@ public class RecordingFragment extends Fragment {
     //Button to end PDR recording
     private Button stopButton;
     private Button cancelButton;
+    private Button livePathButton;
     //Recording icon to show user recording is in progress
     private ImageView recIcon;
     //Compass icon to show user direction of heading
@@ -175,6 +176,23 @@ public class RecordingFragment extends Fragment {
                 if(autoStop != null) autoStop.cancel();
             }
         });
+
+        // Live path button to show the live path to the user during recording
+        this.livePathButton = getView().findViewById(R.id.livePath);
+        this.livePathButton.setOnClickListener(new View.OnClickListener() {
+            /**
+             * {@inheritDoc}
+             * OnClick listener for button to go to maps fragment.
+             * When button clicked the  {@link MapsFragment} is loaded.
+             */
+            @Override
+            public void onClick(View view) {
+                NavDirections action = RecordingFragmentDirections.actionRecordingFragmentToMapsFragment();
+                Navigation.findNavController(view).navigate(action);
+            }
+        });
+
+
 
         // Display the progress of the recording when a max record length is set
         this.timeRemaining = getView().findViewById(R.id.timeRemainingBar);
