@@ -87,6 +87,8 @@ public class MapsFragment extends Fragment {
             mMap.getUiSettings().setRotateGesturesEnabled(true);
             mMap.getUiSettings().setScrollGesturesEnabled(true);
             mMap.getUiSettings().setTiltGesturesEnabled(true);
+            //Shows GNSS position using google maps API.
+            mMap.setMyLocationEnabled(true);
             //Starts displaying live path and orientation once map is ready.
             handler.post(pathUpdater);
         }
