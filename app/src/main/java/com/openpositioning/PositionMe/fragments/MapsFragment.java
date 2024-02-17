@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.util.Log;
+import android.widget.TextView;
 
 public class MapsFragment extends Fragment {
     private GoogleMap mMap;
@@ -50,6 +51,7 @@ public class MapsFragment extends Fragment {
     private SensorFusion sensorFusion =  SensorFusion.getInstance();
     private Handler handler = new Handler();
     float[] startPosition = sensorFusion.getGNSSLatitude(true);
+    float[] currGNSSPos;
     private Marker orientationMarker;
     //Buttons to end PDR recording
     private Button stopButton;
@@ -60,6 +62,9 @@ public class MapsFragment extends Fragment {
     //Zoom of google maps
     private float zoom = 19f;
 
+    //Used to get distance error between GNSS and PDR.
+    private float errDist;
+    private TextView errDistT;
     private CountDownTimer autoStop;
 
 
@@ -122,7 +127,6 @@ public class MapsFragment extends Fragment {
             @Override
             public void run() {
                 updatePath();
-                Log.d("MapsFragment", "updatePath called");
                 handler.postDelayed(this, 1000); // Update path every second
             }
         };
@@ -132,7 +136,15 @@ public class MapsFragment extends Fragment {
         if (pdrValues != null) {
             // Convert PDR position to LatLng.
             LatLng newPosition = convertPDRtoLatLng(startPosition[0], startPosition[1], pdrValues);
-            Log.d("MapsFragment", "Adding new position: " + newPosition.toString());
+            //to be used to calculate error between PDR and GNSS locations
+            currGNSSPos = sensorFusion.getGNSSLatitude(false);
+            //Euclidean error distance between latlng values, appropriate for short distances.
+            errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
+            Log.d("errDist", "Distance Error: " + errDist);
+            errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
+
+
+            //Log.d("MapsFragment", "Adding new position: " + newPosition.toString());
             //Used to draw the path based on current PDR values.
             if (currentPath == null) {
                 PolylineOptions polylineOptions = new PolylineOptions().add(newPosition);
@@ -144,7 +156,7 @@ public class MapsFragment extends Fragment {
             }
             //adds the current orientation marker each time the path gets updated
             float newRotation = (float) Math.toDegrees(sensorFusion.passOrientation());
-            Log.d("MapsFragment", "Updating orientation to: " + newRotation);
+            //Log.d("MapsFragment", "Updating orientation to: " + newRotation);
             addOrientationMarker(newPosition, newRotation);
         }
     }
@@ -173,7 +185,7 @@ public class MapsFragment extends Fragment {
     private LatLng convertPDRtoLatLng(float startX, float startY, float[] pdrPosition) {
         final double EarthRadius = 6378137; // Radius in meters
         double deltaLatitude = pdrPosition[0] / EarthRadius;
-        double deltaLongitude = pdrPosition[1] / (EarthRadius * Math.cos(Math.PI * startY / 180));
+        double deltaLongitude = pdrPosition[1] / (EarthRadius * Math.cos(Math.PI * startX / 180));
         double newLatitude = startX + deltaLatitude * 180 / Math.PI;
         double newLongitude = startY + deltaLongitude * 180 / Math.PI;
         return new LatLng(newLatitude, newLongitude);
@@ -195,6 +207,8 @@ public class MapsFragment extends Fragment {
         if (mapFragment != null) {
             mapFragment.getMapAsync(callback);
         }
+        this.errDistT = getView().findViewById(R.id.errDist);
+        this.errDistT.setText(getString(R.string.meter, "0"));
         // Stop button to save trajectory and move to corrections
         this.autoStop = null;
         this.stopButton = getView().findViewById(R.id.stopB);

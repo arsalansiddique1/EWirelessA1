@@ -114,5 +114,6 @@
     <string name="normal">NORMAL</string>
     <string name="satellite">SATELLITE</string>
     <string name="map_view">Map View:</string>
+    <string name="distance_error">Distance Error:</string>
 
 </resources>
