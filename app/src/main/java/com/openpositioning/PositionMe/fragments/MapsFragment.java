@@ -63,9 +63,11 @@ public class MapsFragment extends Fragment {
     private float zoom = 19f;
 
     //Used to get distance error between GNSS and PDR.
-    private float errDist;
+    private double errDist;
     private TextView errDistT;
     private CountDownTimer autoStop;
+    //Used for converting displacements to latitude,longitudes
+    static final double earthRadius = 6378137; // Radius in meters
 
 
     private final OnMapReadyCallback callback = new OnMapReadyCallback() {
@@ -139,7 +141,8 @@ public class MapsFragment extends Fragment {
             //to be used to calculate error between PDR and GNSS locations
             currGNSSPos = sensorFusion.getGNSSLatitude(false);
             //Euclidean error distance between latlng values, appropriate for short distances.
-            errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
+            //errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
+            errDist = calculatePositioningError(currGNSSPos[0], currGNSSPos[1], newPosition.latitude, newPosition.longitude);
             Log.d("errDist", "Distance Error: " + errDist);
             errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
 
@@ -182,16 +185,29 @@ public class MapsFragment extends Fragment {
             handler.removeCallbacks(pathUpdater);
         }
     }
-
+    //Used to update current position using pdr displacement being scaled
     private LatLng convertPDRtoLatLng(float startX, float startY, float[] pdrPosition) {
-        final double EarthRadius = 6378137; // Radius in meters
-        double deltaLatitude = pdrPosition[0] / EarthRadius;
+        double deltaLatitude = pdrPosition[0] / earthRadius;
         //PDR value of y-coordinate is negated to to align with the cartesian system google maps uses
         //so path can be displayed on the screen correctly.
-        double deltaLongitude = -pdrPosition[1] / (EarthRadius * Math.cos(Math.PI * startX / 180));
+        double deltaLongitude = -pdrPosition[1] / (earthRadius * Math.cos(Math.PI * startX / 180));
         double newLatitude = startX + deltaLatitude * 180 / Math.PI;
         double newLongitude = startY + deltaLongitude * 180 / Math.PI;
         return new LatLng(newLatitude, newLongitude);
+    }
+    public static double calculatePositioningError(double gnssLat, double gnssLon, double pdrLat, double pdrLon) {
+
+        double lat1Rad = Math.toRadians(gnssLat);
+        double lat2Rad = Math.toRadians(pdrLat);
+        double deltaLatRad = Math.toRadians(pdrLat - gnssLat);
+        double deltaLonRad = Math.toRadians(pdrLon - gnssLon);
+
+        double a = Math.sin(deltaLatRad / 2) * Math.sin(deltaLatRad / 2) +
+                Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                        Math.sin(deltaLonRad / 2) * Math.sin(deltaLonRad / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadius * c; // Returns positioning error in meters
     }
 
     @Nullable
