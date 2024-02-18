@@ -182,10 +182,13 @@ public class MapsFragment extends Fragment {
             handler.removeCallbacks(pathUpdater);
         }
     }
+
     private LatLng convertPDRtoLatLng(float startX, float startY, float[] pdrPosition) {
         final double EarthRadius = 6378137; // Radius in meters
         double deltaLatitude = pdrPosition[0] / EarthRadius;
-        double deltaLongitude = pdrPosition[1] / (EarthRadius * Math.cos(Math.PI * startX / 180));
+        //PDR value of y-coordinate is negated to to align with the cartesian system google maps uses
+        //so path can be displayed on the screen correctly.
+        double deltaLongitude = -pdrPosition[1] / (EarthRadius * Math.cos(Math.PI * startX / 180));
         double newLatitude = startX + deltaLatitude * 180 / Math.PI;
         double newLongitude = startY + deltaLongitude * 180 / Math.PI;
         return new LatLng(newLatitude, newLongitude);
