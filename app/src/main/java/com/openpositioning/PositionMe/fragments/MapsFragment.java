@@ -12,6 +12,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -28,8 +29,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.common.collect.Maps;
@@ -38,7 +41,9 @@ import com.openpositioning.PositionMe.sensors.SensorFusion;
 import com.openpositioning.PositionMe.sensors.SensorTypes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.util.Log;
 import android.widget.TextView;
@@ -96,6 +101,8 @@ public class MapsFragment extends Fragment {
             mMap.getUiSettings().setTiltGesturesEnabled(true);
             //Shows GNSS position using google maps API.
             mMap.setMyLocationEnabled(true);
+            //Loads polygons onto the map for building coordinates defined within the function.
+            initializeAndAddPolygons();
             //Starts displaying live path and orientation once map is ready.
             handler.post(pathUpdater);
         }
@@ -216,6 +223,76 @@ public class MapsFragment extends Fragment {
 
         return earthRadius * c; // Returns positioning error in meters
     }
+
+
+    //Function adds building boundaries onto the map so app is aware of when user is in building
+    private void initializeAndAddPolygons() {
+        // Create a new HashMap or similar structure to hold your building names and PolygonOptions
+        HashMap<String, PolygonOptions> buildingPolygons = new HashMap<>();
+
+        // Define each building polygon with its coordinates
+        buildingPolygons.put("Nucleus", new PolygonOptions()
+                .add(new LatLng(55.92280, -3.17463)) // SW corner
+                .add(new LatLng(55.92334, -3.17463)) // NW corner
+                .add(new LatLng(55.92334, -3.17384)) // NE corner
+                .add(new LatLng(55.92287, -3.17384)) // SE corner
+                .add(new LatLng(55.92280, -3.17411))
+                .strokeColor(Color.BLUE)
+                .fillColor(Color.argb(100, 0, 0, 255))); // fill color with some transparency
+
+        buildingPolygons.put("MurrayLibrary", new PolygonOptions()
+                .add(new LatLng(55.92280, -3.17519)) // SW corner
+                .add(new LatLng(55.92303, -3.17519)) // NW corner
+                .add(new LatLng(55.92308, -3.17510)) // ...
+                .add(new LatLng(55.92308, -3.17490))
+                .add(new LatLng(55.92303, -3.17478))
+                .add(new LatLng(55.92296, -3.17475))
+                .add(new LatLng(55.92289, -3.17475))
+                .add(new LatLng(55.92280, -3.17479))
+                .strokeColor(Color.RED)
+                .fillColor(Color.argb(100, 255, 0, 0))); // fill color with some transparency
+
+        buildingPolygons.put("FleemingJenkin", new PolygonOptions()
+                .add(new LatLng(55.92207, -3.17232)) // SW corner
+                .add(new LatLng(55.92271, -3.17297)) // NW corner
+                .add(new LatLng(55.92283, -3.17259)) // ...
+                .add(new LatLng(55.92218, -3.17184))
+
+                .strokeColor(Color.CYAN)
+                .fillColor(Color.argb(100, 0, 255, 255))); // fill color with some transparency
+
+        buildingPolygons.put("HudsonBeare", new PolygonOptions()
+                .add(new LatLng(55.92237, -3.17154)) // SW corner
+                .add(new LatLng(55.92252, -3.17170)) // NW corner
+                .add(new LatLng(55.92270, -3.17115)) // ...
+                .add(new LatLng(55.92241, -3.17074))
+                .add(new LatLng(55.92232, -3.17101))
+                .add(new LatLng(55.92247, -3.17119))
+
+                .strokeColor(Color.MAGENTA)
+                .fillColor(Color.argb(100, 255, 0, 255))); // fill color with some transparency
+
+
+        buildingPolygons.put("Sanderson", new PolygonOptions()
+                .add(new LatLng(55.92267, -3.17202)) // SW corner
+                .add(new LatLng(55.92313, -3.17255)) // NW corner
+                .add(new LatLng(55.92340, -3.17186)) // ...
+                .add(new LatLng(55.92290, -3.17135))
+
+                .strokeColor(Color.YELLOW)
+                .fillColor(Color.argb(100, 255, 255, 0))); // fill color with some transparency
+
+        // Add more buildings as needed
+
+        // Iterate over the HashMap and add each polygon to the map
+        for (Map.Entry<String, PolygonOptions> entry : buildingPolygons.entrySet()) {
+            mMap.addPolygon(entry.getValue()); // Add the polygon to the map
+        }
+    }
+
+
+
+
 
     @Nullable
     @Override
