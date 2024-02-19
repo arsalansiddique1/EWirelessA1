@@ -235,7 +235,7 @@ public class RecordingFragment extends Fragment {
                     else elevatorIcon.setVisibility(View.GONE);
 
                     //Rotate compass image to heading angle
-                    compassIcon.setRotation((float) -Math.toDegrees(sensorFusion.passOrientation()));
+                    compassIcon.setRotation((float) Math.toDegrees(sensorFusion.passOrientation()));
                 }
 
                 /**

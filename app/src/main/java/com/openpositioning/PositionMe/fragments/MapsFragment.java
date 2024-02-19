@@ -129,7 +129,7 @@ public class MapsFragment extends Fragment {
             @Override
             public void run() {
                 updatePath();
-                handler.postDelayed(this, 1000); // Update path every second
+                handler.postDelayed(this, 500); // Update path and orientation every 0.5 seconds
             }
         };
     private void updatePath() {
@@ -138,13 +138,6 @@ public class MapsFragment extends Fragment {
         if (pdrValues != null) {
             // Convert PDR position to LatLng.
             LatLng newPosition = convertPDRtoLatLng(startPosition[0], startPosition[1], pdrValues);
-            //to be used to calculate error between PDR and GNSS locations
-            currGNSSPos = sensorFusion.getGNSSLatitude(false);
-            //Euclidean error distance between latlng values, appropriate for short distances.
-            //errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
-            errDist = calculatePositioningError(currGNSSPos[0], currGNSSPos[1], newPosition.latitude, newPosition.longitude);
-            Log.d("errDist", "Distance Error: " + errDist);
-            errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
 
 
             //Log.d("MapsFragment", "Adding new position: " + newPosition.toString());
@@ -161,6 +154,14 @@ public class MapsFragment extends Fragment {
             float newRotation = (float) Math.toDegrees(sensorFusion.passOrientation());
             //Log.d("MapsFragment", "Updating orientation to: " + newRotation);
             addOrientationMarker(newPosition, newRotation);
+
+            //to be used to calculate error between PDR and GNSS locations
+            currGNSSPos = sensorFusion.getGNSSLatitude(false);
+            //Euclidean error distance between latlng values, appropriate for short distances.
+            //errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
+            errDist = calculatePositioningError(currGNSSPos[0], currGNSSPos[1], newPosition.latitude, newPosition.longitude);
+            Log.d("errDist", "Distance Error: " + errDist);
+            errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
         }
     }
 
@@ -185,14 +186,18 @@ public class MapsFragment extends Fragment {
             handler.removeCallbacks(pathUpdater);
         }
     }
-    //Used to update current position using pdr displacement being scaled
-    private LatLng convertPDRtoLatLng(float startX, float startY, float[] pdrPosition) {
-        double deltaLatitude = pdrPosition[0] / earthRadius;
-        //PDR value of y-coordinate is negated to to align with the cartesian system google maps uses
-        //so path can be displayed on the screen correctly.
-        double deltaLongitude = -pdrPosition[1] / (earthRadius * Math.cos(Math.PI * startX / 180));
-        double newLatitude = startX + deltaLatitude * 180 / Math.PI;
-        double newLongitude = startY + deltaLongitude * 180 / Math.PI;
+    //Used to update current position using PDR displacement
+    //PDR x-value represents Westwards movement, +ve when moving East, -ve when West
+    //PDR Y-value represents Northwards movement, +ve when moving North, -ve when moving South
+    private LatLng convertPDRtoLatLng(float startLat, float startLon, float[] pdrPosition) {
+        // Convert PDR y-coordinate (northward movement) to delta latitude
+        double deltaLatitude = (pdrPosition[1] / earthRadius) * (180 / Math.PI);
+        // Convert PDR x-coordinate (eastward/westward movement) to delta longitude
+        double deltaLongitude = (pdrPosition[0] / (earthRadius * Math.cos(Math.PI * startLat / 180))) * (180 / Math.PI);
+        // Calculate new latitude and longitude
+        double newLatitude = startLat + deltaLatitude;
+        double newLongitude = startLon + deltaLongitude;
+        // Return the new position as a LatLng object
         return new LatLng(newLatitude, newLongitude);
     }
     public static double calculatePositioningError(double gnssLat, double gnssLon, double pdrLat, double pdrLon) {
