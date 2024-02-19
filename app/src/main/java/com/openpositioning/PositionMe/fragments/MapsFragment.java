@@ -28,6 +28,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.GroundOverlay;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -35,6 +37,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.PolyUtil;
 import com.google.common.collect.Maps;
 import com.openpositioning.PositionMe.R;
 import com.openpositioning.PositionMe.sensors.SensorFusion;
@@ -66,6 +69,14 @@ public class MapsFragment extends Fragment {
     private Button normalButton;
     //Zoom of google maps
     private float zoom = 19f;
+
+    //Used to store the current latlng pdr position
+    LatLng newPosition;
+
+    // Create a new HashMap or similar structure to hold your building names and PolygonOptions
+    HashMap<String, PolygonOptions> buildingPolygons = new HashMap<>();
+
+    private GroundOverlay currentGroundOverlay; // Field to keep track of the current overlay
 
     //Used to get distance error between GNSS and PDR.
     private double errDist;
@@ -135,7 +146,10 @@ public class MapsFragment extends Fragment {
         private final Runnable pathUpdater = new Runnable() {
             @Override
             public void run() {
+                //Updates user PDR trajectory and orientation in real time
                 updatePath();
+                //Invokes a series of functions which overlay indoor floor plan if user is inside a building
+                checkUserLocationAndUpdateMap(newPosition);
                 handler.postDelayed(this, 500); // Update path and orientation every 0.5 seconds
             }
         };
@@ -146,7 +160,7 @@ public class MapsFragment extends Fragment {
         float[] pdrValues = sensorFusion.getSensorValueMap().get(SensorTypes.PDR);
         if (pdrValues != null) {
             // Convert PDR position to LatLng.
-            LatLng newPosition = convertPDRtoLatLng(startPosition[0], startPosition[1], pdrValues);
+            newPosition = convertPDRtoLatLng(startPosition[0], startPosition[1], pdrValues);
 
 
             //Log.d("MapsFragment", "Adding new position: " + newPosition.toString());
@@ -178,7 +192,7 @@ public class MapsFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (mMap != null) { // Ensure the map is ready
-            handler.postDelayed(pathUpdater, 1000);  // Start or resume path updates
+            handler.postDelayed(pathUpdater, 500);  // Start or resume path updates
         }
     }
 
@@ -227,8 +241,6 @@ public class MapsFragment extends Fragment {
 
     //Function adds building boundaries onto the map so app is aware of when user is in building
     private void initializeAndAddPolygons() {
-        // Create a new HashMap or similar structure to hold your building names and PolygonOptions
-        HashMap<String, PolygonOptions> buildingPolygons = new HashMap<>();
 
         // Define each building polygon with its coordinates
         buildingPolygons.put("Nucleus", new PolygonOptions()
@@ -238,7 +250,7 @@ public class MapsFragment extends Fragment {
                 .add(new LatLng(55.92287, -3.17384)) // SE corner
                 .add(new LatLng(55.92280, -3.17411))
                 .strokeColor(Color.BLUE)
-                .fillColor(Color.argb(100, 0, 0, 255))); // fill color with some transparency
+                .fillColor(Color.argb(20, 0, 0, 255))); // fill color with some transparency
 
         buildingPolygons.put("MurrayLibrary", new PolygonOptions()
                 .add(new LatLng(55.92280, -3.17519)) // SW corner
@@ -250,7 +262,7 @@ public class MapsFragment extends Fragment {
                 .add(new LatLng(55.92289, -3.17475))
                 .add(new LatLng(55.92280, -3.17479))
                 .strokeColor(Color.RED)
-                .fillColor(Color.argb(100, 255, 0, 0))); // fill color with some transparency
+                .fillColor(Color.argb(20, 255, 0, 0))); // fill color with some transparency
 
         buildingPolygons.put("FleemingJenkin", new PolygonOptions()
                 .add(new LatLng(55.92207, -3.17232)) // SW corner
@@ -259,7 +271,7 @@ public class MapsFragment extends Fragment {
                 .add(new LatLng(55.92218, -3.17184))
 
                 .strokeColor(Color.CYAN)
-                .fillColor(Color.argb(100, 0, 255, 255))); // fill color with some transparency
+                .fillColor(Color.argb(20, 0, 255, 255))); // fill color with some transparency
 
         buildingPolygons.put("HudsonBeare", new PolygonOptions()
                 .add(new LatLng(55.92237, -3.17154)) // SW corner
@@ -270,7 +282,7 @@ public class MapsFragment extends Fragment {
                 .add(new LatLng(55.92247, -3.17119))
 
                 .strokeColor(Color.MAGENTA)
-                .fillColor(Color.argb(100, 255, 0, 255))); // fill color with some transparency
+                .fillColor(Color.argb(20, 255, 0, 255))); // fill color with some transparency
 
 
         buildingPolygons.put("Sanderson", new PolygonOptions()
@@ -280,7 +292,7 @@ public class MapsFragment extends Fragment {
                 .add(new LatLng(55.92290, -3.17135))
 
                 .strokeColor(Color.YELLOW)
-                .fillColor(Color.argb(100, 255, 255, 0))); // fill color with some transparency
+                .fillColor(Color.argb(20, 255, 255, 0))); // fill color with some transparency
 
         // Add more buildings as needed
 
@@ -289,6 +301,85 @@ public class MapsFragment extends Fragment {
             mMap.addPolygon(entry.getValue()); // Add the polygon to the map
         }
     }
+    // Method to check if user is inside any building and switch to indoor map
+    public void checkUserLocationAndUpdateMap(LatLng currentUserLocation) {
+        boolean foundBuilding = false;
+
+        for (Map.Entry<String, PolygonOptions> entry : buildingPolygons.entrySet()) {
+            String buildingId = entry.getKey();
+            PolygonOptions polygonOptions = entry.getValue();
+
+            if (PolyUtil.containsLocation(currentUserLocation, polygonOptions.getPoints(), true)) {
+                // User is inside this building, switch to indoor map
+                foundBuilding = true;
+                switchToIndoorMap(buildingId);
+                break; // Exit after finding the building user is in
+            }
+        }
+        // If the user is not inside any building, remove any existing indoor maps overlays
+        if (!foundBuilding && currentGroundOverlay != null) {
+            currentGroundOverlay.remove();
+            currentGroundOverlay = null; // Clear the reference to prevent memory leaks
+        }
+    }
+    // Method to switch to an indoor map based on the buildingId
+    private void switchToIndoorMap(String buildingId) {
+        // Check if there's already an indoor map displayed and remove it
+        if (currentGroundOverlay != null) {
+            currentGroundOverlay.remove();
+        }
+
+        // Define GroundOverlayOptions for the indoor map
+        GroundOverlayOptions indoorMapOverlay = new GroundOverlayOptions();
+
+        // Example to set the overlay - Adjust location, image, and dimensions as necessary
+        indoorMapOverlay.positionFromBounds(getBoundsFromPolygon(buildingId)); // Assuming you have bounds for each building
+        indoorMapOverlay.image(BitmapDescriptorFactory.fromResource(getIndoorMapResource(buildingId))); // Method to get the correct resource
+
+
+        // Add the overlay to the map
+        currentGroundOverlay = mMap.addGroundOverlay(indoorMapOverlay);
+    }
+    //Helper function to find LatLng bounds from the set of polygon points
+    public LatLngBounds getBoundsFromPolygon(String buildingId) {
+        PolygonOptions polygonOptions = buildingPolygons.get(buildingId);
+        if (polygonOptions == null) {
+            return null; // Building ID not found
+        }
+
+        List<LatLng> points = polygonOptions.getPoints();
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for (LatLng point : points) {
+            builder.include(point);
+        }
+
+        return builder.build();
+    }
+
+    // Helper method to get the resource ID of the indoor map based on the buildingId
+    // Adjust this method to return the correct floor map resource for each building
+    private int getIndoorMapResource(String buildingId) {
+        switch (buildingId) {
+            case "Nucleus":
+                return R.drawable.nucleusg;
+            case "MurrayLibrary":
+                return R.drawable.libraryg;
+            case "FleemingJenkin":
+                return R.drawable.fleeming_jenkin1;
+            case "HudsonBeare":
+                return R.drawable.hudson_beare1;
+            case "Sanderson":
+                return R.drawable.sanderson1;
+            // Add cases for other buildings
+            default:
+                return -1; // Invalid resource
+        }
+    }
+
+
+
+
+
 
 
 
