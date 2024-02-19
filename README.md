@@ -7,8 +7,8 @@
 
 
 ### TODOs
--Implement features 2a-2e from the requirements document
--I.E. use GroundOverlays and layer floorplans on the map, impelement automatic map overlay when usxer enters buildings
+- Implement features 2a-2e from the requirements document
+- I.E. use GroundOverlays and layer floorplans on the map, impelement automatic map overlay when usxer enters buildings
 
 
 
