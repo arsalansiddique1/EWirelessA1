@@ -76,7 +76,7 @@ public class MapsFragment extends Fragment {
     // Create a new HashMap or similar structure to hold your building names and PolygonOptions
     HashMap<String, PolygonOptions> buildingPolygons = new HashMap<>();
 
-    private GroundOverlay currentGroundOverlay; // Field to keep track of the current overlay
+    private GroundOverlay currentGroundOverlay = null; // Field to keep track of the current overlay
 
     //Used to get distance error between GNSS and PDR.
     private double errDist;
@@ -310,9 +310,14 @@ public class MapsFragment extends Fragment {
             PolygonOptions polygonOptions = entry.getValue();
 
             if (PolyUtil.containsLocation(currentUserLocation, polygonOptions.getPoints(), true)) {
-                // User is inside this building, switch to indoor map
+                // User is inside this building, switch to indoor map if not already displayed
+                if (currentGroundOverlay == null || currentGroundOverlay.getTag() == null || !currentGroundOverlay.getTag().equals(buildingId)) {
+                    if (currentGroundOverlay != null) {
+                        currentGroundOverlay.remove(); // Remove existing overlay
+                    }
+                    switchToIndoorMap(buildingId);
+                }
                 foundBuilding = true;
-                switchToIndoorMap(buildingId);
                 break; // Exit after finding the building user is in
             }
         }
@@ -324,10 +329,7 @@ public class MapsFragment extends Fragment {
     }
     // Method to switch to an indoor map based on the buildingId
     private void switchToIndoorMap(String buildingId) {
-        // Check if there's already an indoor map displayed and remove it
-        if (currentGroundOverlay != null) {
-            currentGroundOverlay.remove();
-        }
+
 
         // Define GroundOverlayOptions for the indoor map
         GroundOverlayOptions indoorMapOverlay = new GroundOverlayOptions();
@@ -339,6 +341,7 @@ public class MapsFragment extends Fragment {
 
         // Add the overlay to the map
         currentGroundOverlay = mMap.addGroundOverlay(indoorMapOverlay);
+        currentGroundOverlay.setTag(buildingId);
     }
     //Helper function to find LatLng bounds from the set of polygon points
     public LatLngBounds getBoundsFromPolygon(String buildingId) {
