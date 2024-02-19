@@ -1,14 +1,14 @@
 ## V0.1.1
 
-Features 1a-1d from requiremenrts document implemented and working.
-Created a new Maps fragment which user gets directed to via a "Live View" button on the RecordingFragment
-Plots a live view of the path traversed by the user as well as their orientation based on PDR values
-Displays live error distance between PDR location and GNSS location
+-Features 1a-1d from requiremenrts document implemented and working.
+-Created a new Maps fragment which user gets directed to via a "Live View" button on the RecordingFragment
+-Plots a live view of the path traversed by the user as well as their orientation based on PDR values
+-Displays live error distance between PDR location and GNSS location
 
 
 ### TODOs
-Implement features 2a-2e from the requirements document
-I.E. use GroundOverlays and layer floorplans on the map, impelement automatic map overlay when usxer enters buildings
+-Implement features 2a-2e from the requirements document
+-I.E. use GroundOverlays and layer floorplans on the map, impelement automatic map overlay when usxer enters buildings
 
 
 
