@@ -132,6 +132,8 @@ public class MapsFragment extends Fragment {
                 handler.postDelayed(this, 500); // Update path and orientation every 0.5 seconds
             }
         };
+
+    //Function is used to plot path, orientation marker and distance error between PDR and GNSS.
     private void updatePath() {
         // Fetch the latest PDR position (you'll need to implement getPDRPosition() or similar)
         float[] pdrValues = sensorFusion.getSensorValueMap().get(SensorTypes.PDR);
