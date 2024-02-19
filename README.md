@@ -1,9 +1,9 @@
 ## V0.1.1
 
--Features 1a-1d from requiremenrts document implemented and working.
--Created a new Maps fragment which user gets directed to via a "Live View" button on the RecordingFragment
--Plots a live view of the path traversed by the user as well as their orientation based on PDR values
--Displays live error distance between PDR location and GNSS location
+- Features 1a-1d from requiremenrts document implemented and working.
+- Created a new Maps fragment which user gets directed to via a "Live View" button on the RecordingFragment
+- Plots a live view of the path traversed by the user as well as their orientation based on PDR values
+- Displays live error distance between PDR location and GNSS location
 
 
 ### TODOs
