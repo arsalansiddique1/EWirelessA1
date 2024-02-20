@@ -99,6 +99,9 @@ public class MapsFragment extends Fragment {
     //Used to display current elevation in m
     private TextView elevation;
     private float elevationVal;
+    //used to check if user wants to manually change floor plans
+    private boolean isManualFloorChange = false;
+    private boolean isToastShown = false;
 
 
 
@@ -481,7 +484,7 @@ public class MapsFragment extends Fragment {
         elevationVal= sensorFusion.getElevation();
         int estimatedFloor = Math.round(elevationVal / 2.3f); // Using 2.3m as the height per floor
 
-        if (estimatedFloor != currentFloor) {
+        if (estimatedFloor != currentFloor && !isManualFloorChange) {
             // The floor has changed, update the indoor map
             currentFloor = estimatedFloor;
             updateIndoorMapForCurrentFloor(currentFloor);
@@ -611,6 +614,8 @@ public class MapsFragment extends Fragment {
             public void onClick(View view) {
                 if(autoStop != null) autoStop.cancel();
                 sensorFusion.stopRecording();
+                isManualFloorChange = false;
+                isToastShown = false;
                 CameraPosition currentPosition = mMap.getCameraPosition();
 
                 //Used to transfer camera position and ground overlay over to correction fragment
@@ -637,6 +642,8 @@ public class MapsFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 sensorFusion.stopRecording();
+                isManualFloorChange = false;
+                isToastShown = false;
                 NavDirections action = MapsFragmentDirections.actionMapsFragmentToHomeFragment();
                 Navigation.findNavController(view).navigate(action);
                 if(autoStop != null) autoStop.cancel();
@@ -678,6 +685,7 @@ public class MapsFragment extends Fragment {
              */
             @Override
             public void onClick(View view) {
+                isManualFloorChange = true;
                 Integer[] floors = buildingFloors.get(currentBuildingId);
                 if (floors != null) {
                     // Find the index of the current floor within the floors array
@@ -689,6 +697,10 @@ public class MapsFragment extends Fragment {
                         // Update the indoor map to reflect the new floor
                         updateIndoorMapForCurrentFloor(currentFloor);
                         Toast.makeText(getContext(), "Switched to floor " + currentFloor, Toast.LENGTH_SHORT).show();
+                        if (!isToastShown){
+                            Toast.makeText(getContext(), "Automatic floor change is now disabled", Toast.LENGTH_LONG).show();
+                            isToastShown = true;
+                        }
                     } else {
                         // Optionally notify the user that they are on the top floor
                         Toast.makeText(getContext(), "You are on the top floor.", Toast.LENGTH_SHORT).show();
@@ -707,6 +719,7 @@ public class MapsFragment extends Fragment {
              */
             @Override
             public void onClick(View view) {
+                isManualFloorChange = true;
                 Integer[] floors = buildingFloors.get(currentBuildingId);
                 if (floors != null) {
                     // Find the index of the current floor within the floors array
@@ -717,8 +730,11 @@ public class MapsFragment extends Fragment {
                         currentFloor = floors[currentFloorIndex - 1];
                         // Update the indoor map to reflect the new floor
                         updateIndoorMapForCurrentFloor(currentFloor);
+                        if (!isToastShown){
+                            Toast.makeText(getContext(), "Automatic floor change is now disabled", Toast.LENGTH_LONG).show();
+                            isToastShown = true;
+                        }
                         // Optionally, show a toast with the new floor information
-                        Toast.makeText(getContext(), "Switched to floor " + currentFloor, Toast.LENGTH_SHORT).show();
                     } else {
                         // Optionally, inform the user they are at the lowest floor already
                         Toast.makeText(getContext(), "You are at the lowest floor available.", Toast.LENGTH_SHORT).show();
