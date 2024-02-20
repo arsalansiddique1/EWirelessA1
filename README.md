@@ -1,3 +1,9 @@
+## v0.1.4
+- Correction fragment now keeps floor plans intact which helps user to align trajectory to the floor plan.
+- UI updates made so up and down buttons blend in with theme.
+- Fixed bugs where certain buildings weren't displaying the floor map correctly.
+- Implemented toasts which alerts user that auto floor changes are disabled if using the up and down buttons
+
 ## V0.1.3
 - Features 2a-2e all implemented and working
 - Testing carried out and can confirm all floor plans automatically update based on elevation changes.
