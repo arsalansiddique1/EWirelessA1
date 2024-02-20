@@ -15,9 +15,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.openpositioning.PositionMe.PathView;
 import com.openpositioning.PositionMe.R;
 import com.openpositioning.PositionMe.sensors.SensorFusion;
@@ -27,6 +30,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.openpositioning.PositionMe.viewitems.SharedViewModel;
 
 /**
  * A simple {@link Fragment} subclass. Corrections Fragment is displayed after a recording session
@@ -66,6 +70,8 @@ public class CorrectionFragment extends Fragment {
     private static LatLng start;
     //Path view on screen
     private PathView pathView;
+
+    private SharedViewModel sharedViewModel;
 
     /**
      * Public Constructor for the class.
@@ -127,7 +133,28 @@ public class CorrectionFragment extends Fragment {
                         * scalingRatio) / Math.log(2);
                 System.out.println("onMapReady zoom: " + zoom);
                 //Center the camera
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start, (float) zoom));
+                //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start, (float) zoom));
+
+                sharedViewModel.getCameraPosition().observe(getViewLifecycleOwner(), position -> {
+                    if (position != null) {
+                        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
+                    }
+                });
+                int resourceId = sharedViewModel.getOverlayResourceId();
+                sharedViewModel.getCurrentGroundOverlay().observe(getViewLifecycleOwner(), overlay -> {
+                    if (overlay != null) {
+                        // You can't directly add the existing GroundOverlay object to a new map instance.
+                        // Instead, recreate the overlay using the properties of the observed overlay.
+                        GroundOverlayOptions options = new GroundOverlayOptions()
+                                .image(BitmapDescriptorFactory.fromResource(resourceId))
+                                .positionFromBounds(overlay.getBounds())
+                                .bearing(overlay.getBearing())
+                                .transparency(overlay.getTransparency());
+
+                        mMap.addGroundOverlay(options);
+                    }
+                });
+
             }
         });
 
@@ -142,6 +169,8 @@ public class CorrectionFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
         //Instantiate text view to show average step length
         this.averageStepLengthText = (TextView) getView().findViewById(R.id.averageStepView);

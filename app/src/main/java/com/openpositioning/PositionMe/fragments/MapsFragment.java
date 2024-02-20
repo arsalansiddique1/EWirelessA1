@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 
@@ -28,6 +29,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -42,6 +44,7 @@ import com.google.maps.android.PolyUtil;
 import com.openpositioning.PositionMe.R;
 import com.openpositioning.PositionMe.sensors.SensorFusion;
 import com.openpositioning.PositionMe.sensors.SensorTypes;
+import com.openpositioning.PositionMe.viewitems.SharedViewModel;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -346,7 +349,7 @@ public class MapsFragment extends Fragment {
         ));
         buildingAdjustedBounds.put("MurrayLibrary", new LatLngBounds(
                 new LatLng(55.922800, -3.175190), // Southwest corner
-                new LatLng(55.923080, -3.147500)  // Northeast corner
+                new LatLng(55.923080, -3.174750)  // Northeast corner
         ));
         buildingAdjustedBounds.put("FleemingJenkin", new LatLngBounds(
                 new LatLng(55.922336, -3.172968), // Southwest corner
@@ -608,6 +611,15 @@ public class MapsFragment extends Fragment {
             public void onClick(View view) {
                 if(autoStop != null) autoStop.cancel();
                 sensorFusion.stopRecording();
+                CameraPosition currentPosition = mMap.getCameraPosition();
+
+                //Used to transfer camera position and ground overlay over to correction fragment
+                SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                sharedViewModel.setCameraPosition(currentPosition);
+                sharedViewModel.setCurrentGroundOverlay(currentGroundOverlay);
+                sharedViewModel.setOverlayResourceId(getIndoorMapResource(currentBuildingId, currentFloor));
+
+                //Then navigate to correction fragment.
                 NavDirections action = MapsFragmentDirections.actionMapsFragmentToCorrectionFragment();
                 Navigation.findNavController(view).navigate(action);
             }
