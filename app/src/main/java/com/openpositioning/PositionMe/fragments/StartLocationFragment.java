@@ -102,7 +102,8 @@ public class StartLocationFragment extends Fragment {
 
 
                 // Add a marker in current GPS location and move the camera
-                position = new LatLng(startPosition[0], startPosition[1]);
+                //position = new LatLng(startPosition[0], startPosition[1]);
+                position = new LatLng(55.92279, -3.17405);
                 mMap.addMarker(new MarkerOptions().position(position).title("Start Position")).setDraggable(true);
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(position, zoom ));
 

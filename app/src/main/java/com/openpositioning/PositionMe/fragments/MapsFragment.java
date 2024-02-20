@@ -82,6 +82,8 @@ public class MapsFragment extends Fragment {
     // Define variables for storing building floors and displaying them
     private ImageButton buttonUp;
     private ImageButton buttonDown;
+    //Used to store adjusted overlay bounds
+    private HashMap<String, LatLngBounds> buildingAdjustedBounds;
 
     private GroundOverlay currentGroundOverlay = null; // Field to keep track of the current overlay
 
@@ -91,6 +93,9 @@ public class MapsFragment extends Fragment {
     private CountDownTimer autoStop;
     //Used for converting displacements to latitude,longitudes
     static final double earthRadius = 6378137; // Radius in meters
+    //Used to display current elevation in m
+    private TextView elevation;
+    private float elevationVal;
 
 
 
@@ -126,6 +131,8 @@ public class MapsFragment extends Fragment {
             initializeAndAddPolygons();
             //Loads data for building floors
             initializeBuildingFloors();
+            //Initialised bounds for overlaying floor plans on each building
+            initializeBuildingAdjustedBounds();
 
             //Starts displaying live path and orientation once map is ready.
             handler.post(pathUpdater);
@@ -159,10 +166,14 @@ public class MapsFragment extends Fragment {
         private final Runnable pathUpdater = new Runnable() {
             @Override
             public void run() {
-                //Updates user PDR trajectory and orientation in real time
+                // First, update the user's path on the map
                 updatePath();
-                //Invokes a series of functions which overlay indoor floor plan if user is inside a building
+                // Next, check if the user is inside a building and update the map if necessary
                 checkUserLocationAndUpdateMap(newPosition);
+                // Finally, if the user is inside a building, check their elevation to potentially switch floors
+                checkElevationAndUpdateFloor();
+
+
                 handler.postDelayed(this, 500); // Update path and orientation every 0.5 seconds
             }
         };
@@ -194,10 +205,11 @@ public class MapsFragment extends Fragment {
             //to be used to calculate error between PDR and GNSS locations
             currGNSSPos = sensorFusion.getGNSSLatitude(false);
             //Euclidean error distance between latlng values, appropriate for short distances.
-            //errDist = (float) Math.sqrt(Math.pow(currGNSSPos[0] - newPosition.latitude, 2) + Math.pow(currGNSSPos[1] -  newPosition.longitude, 2));
             errDist = calculatePositioningError(currGNSSPos[0], currGNSSPos[1], newPosition.latitude, newPosition.longitude);
-            Log.d("errDist", "Distance Error: " + errDist);
+            //Log.d("errDist", "Distance Error: " + errDist);
             errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
+            elevationVal = sensorFusion.getElevation();
+            elevation.setText(getString(R.string.elevation, String.format("%.1f", elevationVal)));
         }
     }
 
@@ -321,10 +333,37 @@ public class MapsFragment extends Fragment {
         buildingFloors.put("Nucleus", new Integer[]{-1, 0, 1, 2, 3}); //include lower ground as a floor
         buildingFloors.put("MurrayLibrary", new Integer[]{0, 1, 2, 3}); // Adjust the floor count as necessary
         buildingFloors.put("FleemingJenkin", new Integer[]{0, 1}); // and so on for other buildings
-        buildingFloors.put("HudsonBeare", new Integer[]{0, 1});
+        buildingFloors.put("HudsonBeare", new Integer[]{-1, 0});
         buildingFloors.put("Sanderson", new Integer[]{0, 1, 2});
         // Add other buildings as necessary
     }
+    private void initializeBuildingAdjustedBounds() {
+        buildingAdjustedBounds = new HashMap<>();
+        // Example building bounds. Replace these with the actual adjusted bounds
+        buildingAdjustedBounds.put("Nucleus", new LatLngBounds(
+                new LatLng(55.922800, -3.174630), // Southwest corner
+                new LatLng(55.923340, -3.173840)  // Northeast corner
+        ));
+        buildingAdjustedBounds.put("MurrayLibrary", new LatLngBounds(
+                new LatLng(55.922800, -3.175190), // Southwest corner
+                new LatLng(55.923080, -3.147500)  // Northeast corner
+        ));
+        buildingAdjustedBounds.put("FleemingJenkin", new LatLngBounds(
+                new LatLng(55.922336, -3.172968), // Southwest corner
+                new LatLng(55.922564, -3.171841)  // Northeast corner
+        ));
+        buildingAdjustedBounds.put("HudsonBeare", new LatLngBounds(
+                new LatLng(55.922335, -3.171575),
+                new LatLng(55.922685, -3.170865)
+        ));
+        buildingAdjustedBounds.put("Sanderson", new LatLngBounds(
+                new LatLng(55.922816, -3.172590),
+                new LatLng(55.923254, -3.171410)
+        ));
+
+        // Add other buildings similarly
+    }
+
 
 
     // Method to check if user is inside any building and switch to indoor map
@@ -362,15 +401,26 @@ public class MapsFragment extends Fragment {
 
         // Define GroundOverlayOptions for the indoor map
         GroundOverlayOptions indoorMapOverlay = new GroundOverlayOptions();
+        //LatLngBounds adjustedBounds = adjustBoundsToFitBuilding(buildingId);
+        LatLngBounds bounds = buildingAdjustedBounds.get(buildingId);
+        if (bounds == null) {
+            // Fallback if no adjusted bounds are available
+            bounds = getBoundsFromPolygon(buildingId);
+        }
 
         // Sets indoor map overlay to the current floor the user has selected, at run time this is 0.
-        indoorMapOverlay.positionFromBounds(getBoundsFromPolygon(buildingId)); // Assuming you have bounds for each building
+        indoorMapOverlay.positionFromBounds(bounds); // Assuming you have bounds for each building
         indoorMapOverlay.image(BitmapDescriptorFactory.fromResource(getIndoorMapResource(buildingId, currentFloor))); // Method to get the correct resource
+
+        // Set the bearing based on the building's orientation
+        float bearing = getBuildingBearing(buildingId);
+        indoorMapOverlay.bearing(bearing);
 
 
         // Add the overlay to the map
         currentGroundOverlay = mMap.addGroundOverlay(indoorMapOverlay);
         currentGroundOverlay.setTag(buildingId);
+        currentGroundOverlay.setBearing(bearing);
         currentBuildingId = buildingId;
 
 
@@ -408,12 +458,12 @@ public class MapsFragment extends Fragment {
                 else if (floor == 1) return R.drawable.library1;
                 else if (floor == 2) return R.drawable.library2;
                 else if (floor == 3) return R.drawable.library3;
-            case "FleeminJenkin":
+            case "FleemingJenkin":
                 if (floor == 0) return R.drawable.fleeming_jenkin1;
                 else if (floor == 1) return R.drawable.fleeming_jenkin2;
             case "HudsonBeare":
-                if (floor == 0) return R.drawable.hudson_beare1;
-                else if (floor == 1) return R.drawable.hudson_beare2;
+                if (floor == 0) return R.drawable.hudson_beareg;
+                else if (floor == -1) return R.drawable.hudson_bearelg;
             case "Sanderson":
                 if (floor == 0) return R.drawable.sanderson1;
                 else if (floor == 1) return R.drawable.sanderson2;
@@ -423,11 +473,24 @@ public class MapsFragment extends Fragment {
                 return -1; // Invalid resource
         }
     }
+    //Function is used to automatically update floor plan of the user based on their elevation.
+    public void checkElevationAndUpdateFloor() {
+        elevationVal= sensorFusion.getElevation();
+        int estimatedFloor = Math.round(elevationVal / 2.3f); // Using 2.3m as the height per floor
+
+        if (estimatedFloor != currentFloor) {
+            // The floor has changed, update the indoor map
+            currentFloor = estimatedFloor;
+            updateIndoorMapForCurrentFloor(currentFloor);
+            // Optionally, notify the user of the floor change
+            Toast.makeText(getContext(), "You are now on floor " + currentFloor, Toast.LENGTH_SHORT).show();
+        }
+    }
 
     //Helper function which Removes the existing overlay if it exists.
     //Retrieves the resource ID for the new floor's map based on the current building and floor.
     //Creates a new overlay with the floor map and adds it to the map.
-    private void updateIndoorMapForCurrentFloor() {
+    private void updateIndoorMapForCurrentFloor(int currentFloor) {
         // Check if there's an existing ground overlay and remove it
         if (currentGroundOverlay != null) {
             currentGroundOverlay.remove();
@@ -437,19 +500,61 @@ public class MapsFragment extends Fragment {
 
         // Check if a valid floor map resource ID was found
         if (floorMapResourceId != -1) {
+
+            //LatLngBounds adjustedBounds = adjustBoundsToFitBuilding(currentBuildingId);
+            LatLngBounds bounds = buildingAdjustedBounds.get(currentBuildingId);
+            if (bounds == null) {
+                // Fallback if no adjusted bounds are available
+                bounds = getBoundsFromPolygon(currentBuildingId);
+            }
+
+
             // Define new GroundOverlayOptions for the new floor
             GroundOverlayOptions newFloorOverlayOptions = new GroundOverlayOptions()
-                    .positionFromBounds(getBoundsFromPolygon(currentBuildingId)) // Assuming this method exists and works as before
+                    .positionFromBounds(bounds) // Assuming this method exists and works as before
                     .image(BitmapDescriptorFactory.fromResource(floorMapResourceId));
 
             // Add the overlay to the map and keep a reference to it
             currentGroundOverlay = mMap.addGroundOverlay(newFloorOverlayOptions);
+            currentGroundOverlay.setBearing(getBuildingBearing(currentBuildingId));
             currentGroundOverlay.setTag(currentBuildingId); // Tag the overlay with the building ID
         } else {
             // Optionally, handle the case where no valid floor map was found
             Log.e("MapUpdate", "No valid floor map found for building: " + currentBuildingId + ", floor: " + currentFloor);
         }
     }
+    // Example helper method to get the bearing for each building
+    private float getBuildingBearing(String buildingId) {
+        switch (buildingId) {
+            case "Nucleus":
+                return 0; // Example bearing, adjust as necessary
+            case "MurrayLibrary":
+                return 0; // No rotation needed for north facing
+            case "FleemingJenkin":
+                return -120; // Adjust bearing to match building orientation
+            case "HudsonBeare":
+                return 145;
+            case "Sanderson":
+                return -120;
+            // Add other cases for other buildings with their respective bearings
+            default:
+                return 0; // Default no rotation
+        }
+    }
+//Helper function to attempt to manually tighten bounds for remaining 3 buildings
+    private LatLngBounds adjustBoundsToFitBuilding(String buildingId) {
+        LatLngBounds originalBounds = getBoundsFromPolygon(buildingId);
+        // Example adjustment - tighten bounds by a small factor
+        double latAdjustment = (originalBounds.northeast.latitude - originalBounds.southwest.latitude) * 0.0001; // 5% adjustment
+        double lngAdjustment = (originalBounds.northeast.longitude - originalBounds.southwest.longitude) * 0.0001;
+
+        LatLng newNortheast = new LatLng(originalBounds.northeast.latitude - latAdjustment, originalBounds.northeast.longitude - lngAdjustment);
+        LatLng newSouthwest = new LatLng(originalBounds.southwest.latitude + latAdjustment, originalBounds.southwest.longitude + lngAdjustment);
+        Log.d("AdjustedBounds", "Southwest: " + newSouthwest.latitude + "," + newSouthwest.longitude +
+                " Northeast: " + newNortheast.latitude + "," + newNortheast.longitude);
+        return new LatLngBounds(newSouthwest, newNortheast);
+    }
+
 
 
 
@@ -488,6 +593,8 @@ public class MapsFragment extends Fragment {
         }
         this.errDistT = getView().findViewById(R.id.errDist);
         this.errDistT.setText(getString(R.string.meter, "0"));
+        this.elevation = getView().findViewById(R.id.currElevation);
+        this.elevation.setText(getString(R.string.meter, "0"));
         // Stop button to save trajectory and move to corrections
         this.autoStop = null;
         this.stopButton = getView().findViewById(R.id.stopB);
@@ -568,7 +675,7 @@ public class MapsFragment extends Fragment {
                         // Set the next floor as the current floor
                         currentFloor = floors[currentFloorIndex + 1];
                         // Update the indoor map to reflect the new floor
-                        updateIndoorMapForCurrentFloor();
+                        updateIndoorMapForCurrentFloor(currentFloor);
                         Toast.makeText(getContext(), "Switched to floor " + currentFloor, Toast.LENGTH_SHORT).show();
                     } else {
                         // Optionally notify the user that they are on the top floor
@@ -597,7 +704,7 @@ public class MapsFragment extends Fragment {
                         // Set the next floor as the current floor
                         currentFloor = floors[currentFloorIndex - 1];
                         // Update the indoor map to reflect the new floor
-                        updateIndoorMapForCurrentFloor();
+                        updateIndoorMapForCurrentFloor(currentFloor);
                         // Optionally, show a toast with the new floor information
                         Toast.makeText(getContext(), "Switched to floor " + currentFloor, Toast.LENGTH_SHORT).show();
                     } else {
