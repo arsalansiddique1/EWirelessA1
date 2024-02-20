@@ -2,8 +2,8 @@
 - Features 2a-2e all implemented and working
 - Testing carried out and can confirm all floor plans automatically update based on elevation changes.
 - Start location automatically centres just outside nucleus to make testing easier, marker can be changed by dragging and dropping as usual.
-  ### TODOs
-  - If time allows, modify the corrections fragment to keep map state from maps fragment to allow easier correction of trajectories.
+### TODOs
+- If time allows, modify the corrections fragment to keep map state from maps fragment to allow easier correction of trajectories.
 
 ## V0.1.2
 - Features 2a-2b successfully implemented and working.
