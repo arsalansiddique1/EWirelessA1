@@ -1,25 +1,25 @@
-## v0.1.4
+## v1.4
 - Correction fragment now keeps floor plans intact which helps user to align trajectory to the floor plan.
 - UI updates made so up and down buttons blend in with theme.
 - Fixed bugs where certain buildings weren't displaying the floor map correctly.
 - Implemented toasts which alerts user that auto floor changes are disabled if using the up and down buttons
 - Implemented travelled distance indicator on maps fragment
 
-## V0.1.3
+## V1.3
 - Features 2a-2e all implemented and working
 - Testing carried out and can confirm all floor plans automatically update based on elevation changes.
 - Start location automatically centres just outside nucleus to make testing easier, marker can be changed by dragging and dropping as usual.
 ### TODOs
 - If time allows, modify the corrections fragment to keep map state from maps fragment to allow easier correction of trajectories.
 
-## V0.1.2
+## V1.2
 - Features 2a-2b successfully implemented and working.
 - User is able to enter and exit building and floor plan will display/ disappear respectively.
 ### TODOs
 - 2c-2e still needs to be implemented.
 - Test entering and exiting MurrayLibrary and remaining buildings to see if floor plans display correctly for them.
 
-## V0.1.1
+## V1.1
 
 - Features 1a-1d from requiremenrts document implemented and working.
 - Created a new Maps fragment which user gets directed to via a "Live View" button on the RecordingFragment
