@@ -3,6 +3,7 @@
 - UI updates made so up and down buttons blend in with theme.
 - Fixed bugs where certain buildings weren't displaying the floor map correctly.
 - Implemented toasts which alerts user that auto floor changes are disabled if using the up and down buttons
+- Implemented travelled distance indicator on maps fragment
 
 ## V0.1.3
 - Features 2a-2e all implemented and working

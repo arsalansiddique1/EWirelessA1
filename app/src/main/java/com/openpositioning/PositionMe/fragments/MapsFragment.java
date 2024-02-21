@@ -99,6 +99,12 @@ public class MapsFragment extends Fragment {
     //Used to display current elevation in m
     private TextView elevation;
     private float elevationVal;
+
+    private TextView distanceTravelled;
+    private float distance;
+    private float previousPosX;
+    private float previousPosY;
+
     //used to check if user wants to manually change floor plans
     private boolean isManualFloorChange = false;
     private boolean isToastShown = false;
@@ -216,6 +222,11 @@ public class MapsFragment extends Fragment {
             errDistT.setText(getString(R.string.meter, String.format("%.2f", errDist)));
             elevationVal = sensorFusion.getElevation();
             elevation.setText(getString(R.string.elevation, String.format("%.1f", elevationVal)));
+            //Uses calculation from recording fragment to display travelled distance.
+            distance += Math.sqrt(Math.pow(pdrValues[0] - previousPosX, 2) + Math.pow(pdrValues[1] - previousPosY, 2));
+            distanceTravelled.setText(getString(R.string.meter, String.format("%.2f", distance)));
+            previousPosX = pdrValues[0];
+            previousPosY = pdrValues[1];
         }
     }
 
@@ -601,6 +612,11 @@ public class MapsFragment extends Fragment {
         this.errDistT.setText(getString(R.string.meter, "0"));
         this.elevation = getView().findViewById(R.id.currElevation);
         this.elevation.setText(getString(R.string.meter, "0"));
+        this.distanceTravelled = getView().findViewById(R.id.travDist2);
+        this.distanceTravelled.setText(getString(R.string.meter, "0"));
+        this.distance = 0f;
+        this.previousPosX = 0f;
+        this.previousPosY = 0f;
         // Stop button to save trajectory and move to corrections
         this.autoStop = null;
         this.stopButton = getView().findViewById(R.id.stopB);
