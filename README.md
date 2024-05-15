@@ -1,5 +1,5 @@
 # PositionMe
-Indoor poistioning data collection application created for the University of Edinburgh's Embedded Wireless course. This repo contains the modifications I've made to the positioning app to fulfill the coursework 1 criteria. It involved using sensor data to create a live indoor positioning view so the user can plot a path as they collect indoor positioning data within the Univeristy buildings. This required applying knowledge of the Google Maps API See the assignement pdf for more details.
+Indoor positioning data collection application created for the University of Edinburgh's Embedded Wireless course. This repo contains the modifications I've made to the positioning app to fulfill the coursework 1 criteria. It involved using sensor data to create a live indoor positioning view so the user can plot a path as they collect indoor positioning data within the Univeristy buildings. This required applying knowledge of the Google Maps API See the assignement pdf for more details.
 
 Marks achieved: 70.25/100
 
